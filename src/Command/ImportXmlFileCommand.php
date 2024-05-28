@@ -5,6 +5,7 @@ namespace App\Command;
 use App\Entity\Product;
 use App\Service\FilesystemOperatorFactory;
 use Doctrine\ORM\EntityManagerInterface;
+use League\Flysystem\UnableToReadFile;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -55,37 +56,47 @@ class ImportXmlFileCommand extends Command
         $driver = $input->getArgument('driver');
         $file_name = $input->getArgument('file_name');
 
-        $filesystem = $this->filesystem->getFilesystemOperator($driver);
-        $xml_contents = $filesystem->read($file_name);
-        $xml_contents = simplexml_load_string($xml_contents);
+        try {
 
-        foreach ($xml_contents as $item) {
-
-            $product = new Product();
-            $product->setEntityId(intval($item->entity_id));
-            $product->setCategoryName(strval($item->CategoryName));
-            $product->setSku(strval($item->sku));
-            $product->setName(strval($item->name));
-            $product->setDescription(strval($item->description));
-            $product->setShortdesc(strval($item->shortdesc));
-            $product->setPrice(floatval($item->price));
-            $product->setLink(strval($item->link));
-            $product->setImage(strval($item->image));
-            $product->setBrand(strval($item->Brand));
-            $product->setRating(intval($item->Rating));
-            $product->setCaffeineType(strval($item->CaffeineType));
-            $product->setCount(intval($item->Count));
-            $product->setFlavored(strval($item->Flavored));
-            $product->setSeasonal(strval($item->Seasonal));
-            $product->setInStock(strval($item->Instock));
-            $product->setFacebook(strval($item->Facebook));
-            $product->setIskcup(strval($item->IsKCup));
-
-            $this->entityManager->persist($product);
+            $filesystem = $this->filesystem->getFilesystemOperator($driver);
+            $xml_contents = $filesystem->read($file_name);
+            $xml_contents = simplexml_load_string($xml_contents);
+    
+            foreach ($xml_contents as $item) {
+    
+                $product = new Product();
+                $product->setEntityId(intval($item->entity_id));
+                $product->setCategoryName(strval($item->CategoryName));
+                $product->setSku(strval($item->sku));
+                $product->setName(strval($item->name));
+                $product->setDescription(strval($item->description));
+                $product->setShortdesc(strval($item->shortdesc));
+                $product->setPrice(floatval($item->price));
+                $product->setLink(strval($item->link));
+                $product->setImage(strval($item->image));
+                $product->setBrand(strval($item->Brand));
+                $product->setRating(intval($item->Rating));
+                $product->setCaffeineType(strval($item->CaffeineType));
+                $product->setCount(intval($item->Count));
+                $product->setFlavored(strval($item->Flavored));
+                $product->setSeasonal(strval($item->Seasonal));
+                $product->setInStock(strval($item->Instock));
+                $product->setFacebook(strval($item->Facebook));
+                $product->setIskcup(strval($item->IsKCup));
+    
+                $this->entityManager->persist($product);
+                
+            }
             
+            $this->entityManager->flush();
+
+        } catch (UnableToReadFile $e) {
+            $this->io->error("There was a problem trying to read the file \"$file_name\". Maybe it could not be found?");
+            return Command::FAILURE;
+        } catch (\Throwable $e) {
+            $this->io->error('There was an error while trying to import the data. Message: ' . $e->getMessage());
+            return Command::FAILURE;
         }
-        
-        $this->entityManager->flush();
         
         $this->io->success('Your products file was imported sucessfully');
 
