@@ -8,3 +8,7 @@ flysystem:
             adapter: 'local'
             options:
                 directory: '%kernel.project_dir%/var/storage/local/products'
+        test:
+            adapter: 'local'
+            options:
+                directory: '%kernel.project_dir%/temp/'

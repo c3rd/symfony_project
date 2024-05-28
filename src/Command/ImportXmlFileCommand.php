@@ -42,7 +42,7 @@ class ImportXmlFileCommand extends Command
         ;
     }
 
-    protected function initialize(InputInterface $input, OutputInterface $output)
+    protected function initialize(InputInterface $input, OutputInterface $output): void
     {
         $this->io = new SymfonyStyle($input, $output);
     }
@@ -60,7 +60,9 @@ class ImportXmlFileCommand extends Command
 
             $filesystem = $this->filesystem->getFilesystemOperator($driver);
             $xml_contents = $filesystem->read($file_name);
+            $this->logger->info($xml_contents);
             $xml_contents = simplexml_load_string($xml_contents);
+
     
             foreach ($xml_contents as $item) {
     
@@ -91,9 +93,11 @@ class ImportXmlFileCommand extends Command
             $this->entityManager->flush();
 
         } catch (UnableToReadFile $e) {
+            $this->logger->info($e->getMessage());
             $this->io->error("There was a problem trying to read the file \"$file_name\". Maybe it could not be found?");
             return Command::FAILURE;
         } catch (\Throwable $e) {
+            $this->logger->info($e->getMessage());
             $this->io->error('There was an error while trying to import the data. Message: ' . $e->getMessage());
             return Command::FAILURE;
         }
